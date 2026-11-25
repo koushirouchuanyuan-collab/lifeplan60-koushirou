@@ -1,0 +1,279 @@
+ 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#123047">
+<link rel="manifest" href="manifest.json">
+<title>LIFE PLAN 60</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f0f4f7;color:#123047;font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding-bottom:100px}
+header{background:#123047;color:white;padding:24px 20px}
+header h1{margin:0;font-size:24px}
+header small{color:#b8d8df}
+main{max-width:700px;margin:auto;padding:16px}
+section{display:none}
+section.active{display:block}
+.card{background:white;border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 3px 12px #1230470a}
+.hero{background:linear-gradient(135deg,#123047,#087e78);color:white}
+h2{font-size:19px}
+h3{font-size:15px}
+.big{font-size:32px;font-weight:700;margin:12px 0}
+label{display:block;font-size:13px;margin-top:12px}
+input,select,button{font:inherit}
+input,select{width:100%;padding:13px;border:1px solid #d6e0e5;border-radius:10px;margin:6px 0;background:white;font-size:16px}
+button{border:0;border-radius:12px;background:#087e78;color:white;padding:13px;font-weight:600;cursor:pointer}
+.full{width:100%;margin-top:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{flex:1;background:#e4f0ef;color:#087e78}
+nav{position:fixed;bottom:0;left:0;right:0;background:white;display:flex;padding:10px 4px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #ddd}
+nav button{flex:1;background:white;color:#123047;font-size:11px;padding:7px 0}
+nav span{display:block;font-size:23px;margin-bottom:4px}
+.line{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #eee;gap:8px}
+.muted{color:#71818c;font-size:12px}
+.bar{height:9px;background:#e4eaee;border-radius:9px;overflow:hidden}
+.fill{height:100%;background:#087e78}
+.danger{color:#c0392b}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{text-align:right;padding:10px 3px;border-bottom:1px solid #eee}
+td:first-child,th:first-child{text-align:left}
+</style>
+</head>
+<body>
+<header>
+<h1>LIFE PLAN 60</h1>
+<small>家計と人生を、ひとつに。</small>
+</header>
+<main>
+<section id="home" class="active">
+<div class="card hero">
+<small>現在の総資産</small>
+<div class="big" id="total">¥0</div>
+<small>目標達成率</small>
+<p id="progress">0%</p>
+<div class="bar"><div class="fill" id="goalbar" style="background:#79e4cb"></div></div>
+</div>
+<div class="card">
+<input type="month" id="month" onchange="render()">
+<div class="grid">
+<div><small>収入</small><h2 id="income">¥0</h2></div>
+<div><small>支出</small><h2 id="expense">¥0</h2></div>
+<div><small>投資</small><h2 id="investment">¥0</h2></div>
+<div><small>残り</small><h2 id="balance">¥0</h2></div>
+</div>
+</div>
+<div class="card">
+<h2>今月の予算</h2>
+<div id="budgets"></div>
+</div>
+<div class="card">
+<h2>最近の記録</h2>
+<div id="history"></div>
+</div>
+</section>
+<section id="entry">
+<div class="card">
+<h2>かんたん入力</h2>
+<label>日付</label>
+<input type="date" id="date">
+<label>種類</label>
+<select id="kind">
+<option>支出</option>
+<option>収入</option>
+<option>投資</option>
+</select>
+<label>金額（円）</label>
+<input id="amount" type="number" inputmode="numeric" min="1" placeholder="0">
+<div class="quick">
+<button onclick="amount.value=500">500</button>
+<button onclick="amount.value=1000">1,000</button>
+<button onclick="amount.value=3000">3,000</button>
+<button onclick="amount.value=5000">5,000</button>
+</div>
+<label>カテゴリー</label>
+<select id="category"></select>
+<label>メモ</label>
+<input id="memo" placeholder="任意">
+<button class="full" onclick="add()">記録する</button>
+</div>
+</section>
+<section id="assets">
+<div class="card">
+<h2>資産残高</h2>
+<p class="muted">銀行・証券口座の実際の残高を入力してください。</p>
+<div id="assetFields"></div>
+<button class="full" onclick="saveAssets()">残高を保存</button>
+</div>
+</section>
+<section id="plan">
+<div class="card">
+<h2>60年間の資産予測</h2>
+<p class="muted">現在の老後資産を起点とする税引前の概算です。</p>
+<div id="projection"></div>
+</div>
+<div class="card">
+<h2>子どもの教育資金</h2>
+<div id="education"></div>
+</div>
+</section>
+<section id="settings">
+<div class="card">
+<h2>人生・家計設定</h2>
+<div id="settingFields"></div>
+<button class="full" onclick="saveSettings()">設定を保存</button>
+</div>
+<div class="card">
+<h2>月間カテゴリー予算</h2>
+<div id="budgetFields"></div>
+<button class="full" onclick="saveBudgets()">予算を保存</button>
+</div>
+<div class="card">
+<h2>データ管理</h2>
+<button class="full" onclick="backup()">バックアップ保存</button>
+<button class="full" onclick="csv()">家計簿CSV出力</button>
+<label>バックアップから復元</label>
+<input type="file" accept=".json" onchange="restore(event)">
+</div>
+</section>
+</main>
+<nav>
+<button onclick="show('home')"><span>⌂</span>ホーム</button>
+<button onclick="show('entry')"><span>＋</span>入力</button>
+<button onclick="show('assets')"><span>¥</span>資産</button>
+<button onclick="show('plan')"><span>↗</span>人生計画</button>
+<button onclick="show('settings')"><span>⚙</span>設定</button>
+</nav>
+<script>
+const $=id=>document.getElementById(id);
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
+const cats=['家賃','食費','水道光熱費','通信費','交際費','衣服・美容','日用品','交通費','教育費','旅行','医療・保険','その他','給与','賞与','NISA','教育積立'];
+const assetNames=['現金','自分のNISA','配偶者のNISA','特定口座','第1子教育資金','第2子教育資金','その他資産','借入残高'];
+const defaults={age:26,goal:300000000,monthly:0,bonus:0,spouse:0,rate:5,inflation:2,child:0,childYears:10,marriage:0,birth1:0,birth2:0};
+const fields={age:'現在の年齢',goal:'老後資産目標（円）',monthly:'自分の毎月投資額（円）',bonus:'年間賞与投資額（円）',spouse:'配偶者の毎月投資額（円）',rate:'年間運用利回り（%）',inflation:'年間物価上昇率（%）',child:'子ども1人の月間積立（円）',childYears:'教育資金の積立年数',marriage:'結婚予定年',birth1:'第1子出生予定年',birth2:'第2子出生予定年'};
+let data={entries:[],assets:{},budgets:{},settings:{...defaults}};
+try{
+const old=JSON.parse(localStorage.getItem('lifeplan60'));
+if(old)data={...data,...old,settings:{...defaults,...old.settings}};
+}catch(e){}
+function save(){
+try{localStorage.setItem('lifeplan60',JSON.stringify(data))}
+catch(e){alert('保存できませんでした。バックアップを確認してください。')}
+}
+function today(){
+const d=new Date();
+return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+$('date').value=today();
+$('month').value=today().slice(0,7);
+$('category').innerHTML=cats.map(c=>`<option>${c}</option>`).join('');
+function show(id){
+document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+$(id).classList.add('active');
+window.scrollTo(0,0);
+render();
+}
+function add(){
+const a=Number($('amount').value);
+if(!Number.isFinite(a)||a<=0||!$('date').value)return alert('日付と金額を確認してください');
+data.entries.push({id:Date.now(),date:$('date').value,kind:$('kind').value,category:$('category').value,amount:a,memo:$('memo').value});
+save();
+$('amount').value='';
+$('memo').value='';
+$('month').value=$('date').value.slice(0,7);
+show('home');
+}
+function removeEntry(id){
+if(confirm('この記録を削除しますか？')){
+data.entries=data.entries.filter(e=>e.id!==id);
+save();render();
+}}
+function esc(s){
+return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function render(){
+const total=assetNames.reduce((s,n)=>s+(Number(data.assets[n])||0)*(n==='借入残高'?-1:1),0);
+$('total').textContent=yen(total);
+const pct=data.settings.goal>0?total/data.settings.goal*100:0;
+$('progress').textContent=pct.toFixed(2)+'%';
+$('goalbar').style.width=Math.max(0,Math.min(100,pct))+'%';
+const es=data.entries.filter(e=>e.date.startsWith($('month').value));
+const sum=k=>es.filter(e=>e.kind===k).reduce((s,e)=>s+e.amount,0);
+$('income').textContent=yen(sum('収入'));
+$('expense').textContent=yen(sum('支出'));
+$('investment').textContent=yen(sum('投資'));
+$('balance').textContent=yen(sum('収入')-sum('支出')-sum('投資'));
+$('budgets').innerHTML=cats.filter(c=>data.budgets[c]>0).map(c=>{
+const used=es.filter(e=>e.kind==='支出'&&e.category===c).reduce((s,e)=>s+e.amount,0);
+const b=data.budgets[c];
+return `<p>${c}　${yen(used)} / ${yen(b)}</p><div class="bar"><div class="fill" style="width:${Math.min(100,used/b*100)}%;background:${used>b?'#c0392b':'#087e78'}"></div></div>`;
+}).join('')||'設定画面から予算を登録してください。';
+$('history').innerHTML=es.slice().reverse().map(e=>`<div class="line"><div>${esc(e.category)}<br><small class="muted">${esc(e.date)} ${esc(e.memo||'')}</small></div><div>${esc(e.kind)} ${yen(e.amount)} <button onclick="removeEntry(${Number(e.id)})">×</button></div></div>`).join('')||'記録はまだありません。';
+project();
+}
+function setup(){
+$('assetFields').innerHTML=assetNames.map((n,i)=>`<label>${n}</label><input type="number" min="0" id="a${i}" value="${Number(data.assets[n])||0}">`).join('');
+$('settingFields').innerHTML=Object.keys(fields).map(k=>`<label>${fields[k]}</label><input type="number" step="any" id="s_${k}" value="${Number(data.settings[k])||0}">`).join('');
+$('budgetFields').innerHTML=cats.slice(0,12).map((c,i)=>`<label>${c}</label><input type="number" min="0" id="b${i}" value="${Number(data.budgets[c])||0}">`).join('');
+}
+function saveAssets(){
+assetNames.forEach((n,i)=>data.assets[n]=Math.max(0,Number($('a'+i).value)||0));
+save();render();alert('保存しました');
+}
+function saveSettings(){
+Object.keys(fields).forEach(k=>data.settings[k]=Number($('s_'+k).value)||0);
+save();render();alert('保存しました');
+}
+function saveBudgets(){
+cats.slice(0,12).forEach((c,i)=>data.budgets[c]=Math.max(0,Number($('b'+i).value)||0));
+save();render();alert('保存しました');
+}
+function project(){
+const s=data.settings;
+let a=['自分のNISA','配偶者のNISA','特定口座'].reduce((v,n)=>v+(Number(data.assets[n])||0),0);
+const r=Math.pow(1+Math.max(-99,s.rate)/100,1/12);
+let html='<table><tr><th>年齢</th><th>運用資産</th><th>現在価値</th></tr>';
+for(let y=0;y<=60;y++){
+html+=`<tr><td>${s.age+y}歳</td><td>${yen(a)}</td><td>${yen(a/Math.pow(1+Math.max(-99,s.inflation)/100,y))}</td></tr>`;
+for(let m=1;m<=12;m++)a=a*r+s.monthly+s.spouse+(m===12?s.bonus:0);
+}
+$('projection').innerHTML=html+'</table>';
+let e=0;
+for(let m=1;m<=216;m++)e=e*r+(m<=s.childYears*12?s.child:0);
+$('education').innerHTML=`<p>1人あたり18歳時点</p><div class="big">${yen(e)}</div><p>2人合計：${yen(e*2)}</p><small>出生時から積み立てる場合の税引前試算</small>`;
+}
+function download(name,text,type){
+const url=URL.createObjectURL(new Blob([text],{type}));
+const a=document.createElement('a');
+a.href=url;a.download=name;a.click();
+setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function backup(){
+download('lifeplan60-'+today()+'.json',JSON.stringify(data,null,2),'application/json');
+}
+function csv(){
+const q=x=>'"'+String(x).replace(/"/g,'""')+'"';
+download('lifeplan60.csv','\uFEFF日付,種類,分類,金額,メモ\n'+data.entries.map(e=>[e.date,e.kind,e.category,e.amount,e.memo].map(q).join(',')).join('\n'),'text/csv');
+}
+async function restore(event){
+try{
+const d=JSON.parse(await event.target.files[0].text());
+if(!Array.isArray(d.entries)||!d.settings||!d.assets||!d.budgets)throw Error();
+if(confirm('現在のデータを上書きしますか？')){
+data={...d,settings:{...defaults,...d.settings}};
+save();setup();render();
+alert('復元しました');
+}
+}catch(e){alert('バックアップファイルを確認してください')}
+}
+setup();render();
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
